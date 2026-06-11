@@ -14,6 +14,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -67,5 +69,27 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: "Change a user's status" })
+  @ApiResponse({ status: 200, description: "User's status successfully updated" })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateUserStatusDto: UpdateUserStatusDto,
+  ) {
+    return this.usersService.updateStatus(id, updateUserStatusDto.status);
+  }
+
+  @Patch(':id/role')
+  @ApiOperation({ summary: "Change a user's role" })
+  @ApiResponse({ status: 200, description: "User's role successfully updated" })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  updateRole(
+    @Param('id') id: string,
+    @Body() updateUserRoleDto: UpdateUserRoleDto,
+  ) {
+    return this.usersService.updateRole(id, updateUserRoleDto.role);
   }
 }

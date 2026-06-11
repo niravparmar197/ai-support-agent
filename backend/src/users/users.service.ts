@@ -4,6 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { UserRole, UserStatus } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -156,5 +157,31 @@ export class UsersService {
       message: 'Invitation sent successfully (mocked)',
       user: createdUser,
     };
+  }
+
+  async updateStatus(id: string, status: UserStatus) {
+    // Verify user exists and not soft-deleted
+    await this.findOne(id);
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { status },
+    });
+
+    const { password, ...rest } = updated;
+    return rest;
+  }
+
+  async updateRole(id: string, role: UserRole) {
+    // Verify user exists and not soft-deleted
+    await this.findOne(id);
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+
+    const { password, ...rest } = updated;
+    return rest;
   }
 }

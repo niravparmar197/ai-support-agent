@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { CreateOrganizationWithOwnerDto } from './dto/create-organization-owner.dto';
+import { UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class OrganizationsService {
@@ -11,6 +14,61 @@ export class OrganizationsService {
   create(createOrganizationDto: CreateOrganizationDto) {
     return this.prisma.organization.create({
       data: createOrganizationDto,
+    });
+  }
+
+  async createWithOwner(dto: CreateOrganizationWithOwnerDto) {
+    // Hash password
+    const hashedPassword = await bcrypt.hash(dto.ownerPassword, 10);
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Verify email uniqueness
+      const existingUser = await tx.user.findUnique({
+        where: { email: dto.ownerEmail },
+      });
+      if (existingUser) {
+        throw new ConflictException(`User with email ${dto.ownerEmail} already exists`);
+      }
+
+      // 2. Verify organization slug uniqueness
+      const existingOrg = await tx.organization.findUnique({
+        where: { slug: dto.orgSlug },
+      });
+      if (existingOrg) {
+        throw new ConflictException(`Organization with slug ${dto.orgSlug} already exists`);
+      }
+
+      // 3. Create Organization
+      const organization = await tx.organization.create({
+        data: {
+          name: dto.orgName,
+          slug: dto.orgSlug,
+        },
+      });
+
+      // 4. Create Owner User
+      const owner = await tx.user.create({
+        data: {
+          name: dto.ownerName,
+          email: dto.ownerEmail,
+          password: hashedPassword,
+          role: UserRole.ADMIN,
+          organizationId: organization.id,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+
+      return {
+        organization,
+        owner,
+      };
     });
   }
 

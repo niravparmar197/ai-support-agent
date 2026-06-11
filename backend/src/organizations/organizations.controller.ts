@@ -13,6 +13,7 @@ import { OrganizationsService } from './organizations.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { CreateOrganizationWithOwnerDto } from './dto/create-organization-owner.dto';
 
 @ApiTags('Organizations')
 @Controller('organizations')
@@ -27,6 +28,15 @@ export class OrganizationsController {
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   create(@Body() createOrganizationDto: CreateOrganizationDto) {
     return this.organizationsService.create(createOrganizationDto);
+  }
+
+  @Post('with-owner')
+  @ApiOperation({ summary: 'Create a new organization and its initial admin owner in a single database transaction' })
+  @ApiResponse({ status: 201, description: 'Organization and Owner successfully created' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 409, description: 'Email address or slug already exists' })
+  createWithOwner(@Body() createOrganizationWithOwnerDto: CreateOrganizationWithOwnerDto) {
+    return this.organizationsService.createWithOwner(createOrganizationWithOwnerDto);
   }
 
   @Get()
